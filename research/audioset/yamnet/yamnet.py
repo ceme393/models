@@ -127,6 +127,35 @@ def yamnet_frames_model(params):
       outputs=[predictions, embeddings, log_mel_spectrogram])
   return frames_model
 
+def yamnet_preprocessing_model(params):
+    waveform = layers.Input(batch_shape=(None,), dtype=tf.float32)
+
+    waveform_padded = features_lib.pad_waveform(waveform, params)
+
+    log_mel_spectrogram, features = features_lib.waveform_to_log_mel_spectrogram_patches(
+        waveform_padded, params
+    )
+
+    return Model(
+        name="yamnet_preprocessing",
+        inputs=waveform,
+        outputs=[features, log_mel_spectrogram]
+    )
+
+def yamnet_cnn_model(params):
+
+    features_input = layers.Input(
+        shape=(params.patch_frames, params.patch_bands),
+        dtype=tf.float32
+    )
+
+    predictions, embeddings = yamnet(features_input, params)
+
+    return Model(
+        name="yamnet_core_cnn",
+        inputs=features_input,
+        outputs=[predictions, embeddings]
+    )
 
 def class_names(class_map_csv):
   """Read the class name definition file and return a list of strings."""
